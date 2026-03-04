@@ -1,0 +1,7 @@
+# Shared variables for all robot scripts.
+# Source this file: source "$(dirname "$0")/VARIABLES"
+
+ROBOT="racecar@192.168.8.206"
+PASS="racecar@mit"
+SSH="sshpass -p $PASS ssh $ROBOT"
+SCP="sshpass -p $PASS scp"
