@@ -1,7 +1,90 @@
 # Shared variables for all robot scripts.
 # Source this file: source "$(dirname "$0")/VARIABLES"
 
-ROBOT="racecar@192.168.8.206"
+detect_os() {
+  case "$(uname -s)" in
+    Linux*)  OS="linux" ;;
+    Darwin*) OS="macos" ;;
+    *)
+      echo "ERROR: Unsupported OS: $(uname -s)" >&2
+      return 1
+      ;;
+  esac
+}
+detect_os
+
+die() { echo "ERROR: $*" >&2; exit 1; }
+warn() { echo "WARNING: $*" >&2; }
+
+require_cmd() {
+  command -v "$1" &>/dev/null && return 0
+  local hint=""
+  case "$1" in
+    sshpass)
+      if [[ "$OS" == "macos" ]]; then
+        hint="Install with: brew install sshpass"
+      else
+        hint="Install with: sudo apt install sshpass"
+      fi
+      ;;
+    ssh)
+      if [[ "$OS" == "macos" ]]; then
+        hint="SSH should be pre-installed on macOS. Check your PATH."
+      else
+        hint="Install with: sudo apt install openssh-client"
+      fi
+      ;;
+    tmux)
+      if [[ "$OS" == "macos" ]]; then
+        hint="Install with: brew install tmux"
+      else
+        hint="Install with: sudo apt install tmux"
+      fi
+      ;;
+    tar)
+      if [[ "$OS" == "macos" ]]; then
+        hint="tar should be pre-installed on macOS. Check your PATH."
+      else
+        hint="Install with: sudo apt install tar"
+      fi
+      ;;
+    *)
+      hint="Please install '$1' and ensure it is on your PATH."
+      ;;
+  esac
+  die "'$1' is required but not found. $hint"
+}
+
+require_cmd ssh
+require_cmd sshpass
+
+ping_with_timeout() {
+  local host="$1" timeout="$2"
+  if [[ "$OS" == "macos" ]]; then
+    ping -c 1 -t "$timeout" "$host" &>/dev/null
+  else
+    ping -c 1 -W "$timeout" "$host" &>/dev/null
+  fi
+}
+
+ROBOT="racecar@192.168.1.56"
+ROBOT_BACKUP="racecar@192.168.8.206"
+
+# Fall back to ROBOT_BACKUP if primary is unreachable
+if ! ping_with_timeout 192.168.1.56 5; then
+  warn "Primary robot (192.168.1.56) unreachable, trying backup (192.168.8.206)..."
+  if ping_with_timeout 192.168.8.206 5; then
+    ROBOT="$ROBOT_BACKUP"
+  else
+    die "Neither primary (192.168.1.56) nor backup (192.168.8.206) robot is reachable. Are you on the robot's network?"
+  fi
+fi
+
 PASS="racecar@mit"
-SSH="sshpass -p $PASS ssh $ROBOT"
-SCP="sshpass -p $PASS scp"
+SSH="sshpass -p $PASS ssh -o StrictHostKeyChecking=no $ROBOT"
+SCP="sshpass -p $PASS scp -o StrictHostKeyChecking=no"
+
+check_ssh() {
+  sshpass -p "$PASS" ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no -o BatchMode=no "$ROBOT" true 2>/dev/null \
+    || die "SSH connection to $ROBOT failed. Check that the robot is on, you're on the right network, and the password is correct."
+}

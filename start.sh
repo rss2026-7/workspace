@@ -4,15 +4,23 @@
 
 set -e
 source "$(dirname "$0")/VARIABLES"
+check_ssh
+$SSH "command -v tmux" >/dev/null 2>&1 || die "tmux is not installed on the robot. Install it with: sudo apt install tmux"
 
 start_processes() {
     # Pre-cache sudo credentials so run_rostorch.sh doesn't prompt
-    $SSH "tmux send-keys -t default:0.0 'echo $PASS | sudo -S true 2>/dev/null && cd && ./run_rostorch.sh' Enter"
-    $SSH "tmux split-window -t default:0 -v"
+    $SSH "tmux send-keys -t default:0.0 'echo $PASS | sudo -S true 2>/dev/null && cd && ./run_rostorch.sh' Enter" \
+        || die "Failed to send run_rostorch command to tmux pane 0.0"
+    $SSH "tmux split-window -t default:0 -v" \
+        || die "Failed to split tmux window"
     # 'connect' enters the docker container, then run teleop inside it
-    $SSH "tmux send-keys -t default:0.1 'echo $PASS | sudo -S true 2>/dev/null && connect' Enter"
+    # Wait for run_rostorch.sh to start the docker container before connecting
+    sleep 10
+    $SSH "tmux send-keys -t default:0.1 'echo $PASS | sudo -S true 2>/dev/null && connect' Enter" \
+        || die "Failed to send connect command to tmux pane 0.1"
     sleep 3
-    $SSH "tmux send-keys -t default:0.1 'teleop' Enter"
+    $SSH "tmux send-keys -t default:0.1 'teleop' Enter" \
+        || die "Failed to send teleop command to tmux pane 0.1"
     echo "Started run_rostorch.sh and teleop in tmux session 'default'."
     echo "Attach with: ./login.sh, then: tmux attach -t default"
 }
@@ -30,8 +38,8 @@ if $SSH "tmux has-session -t default 2>/dev/null"; then
         exit 0
     elif [[ "$ROSTORCH" == "no" && "$TELEOP" == "no" ]]; then
         echo "Neither process running. Recreating session..."
-        $SSH "tmux kill-session -t default"
-        $SSH "tmux new-session -d -s default"
+        $SSH "tmux kill-session -t default" || die "Failed to kill existing tmux session 'default'"
+        $SSH "tmux new-session -d -s default" || die "Failed to create new tmux session 'default'"
         start_processes
     else
         echo "ERROR: Inconsistent state — only one process is running."
@@ -42,6 +50,6 @@ if $SSH "tmux has-session -t default 2>/dev/null"; then
     fi
 else
     echo "Creating tmux session 'default'..."
-    $SSH "tmux new-session -d -s default"
+    $SSH "tmux new-session -d -s default" || die "Failed to create tmux session 'default'"
     start_processes
 fi
