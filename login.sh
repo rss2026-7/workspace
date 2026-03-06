@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/VARIABLES"
-sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$ROBOT"
+sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no -L 6081:localhost:6081 "$ROBOT"
 rc=$?
 if [[ $rc -ne 0 ]]; then
   case $rc in
