@@ -3,7 +3,7 @@
 # Usage: ./login_docker.sh
 
 source "$(dirname "$0")/VARIABLES"
-sshpass -p "$PASS" ssh -t -o StrictHostKeyChecking=no "$ROBOT" "echo $PASS | sudo -S true 2>/dev/null && bash -ic connect"
+sshpass -p "$PASS" ssh -t -o StrictHostKeyChecking=no "$ROBOT" "echo $PASS | sudo -S true 2>/dev/null && sudo docker exec -it \$(sudo docker ps -q | head -1) bash -c 'cd ~/racecar_ws && exec bash'"
 rc=$?
 if [[ $rc -ne 0 ]]; then
   case $rc in
