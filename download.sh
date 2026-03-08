@@ -31,7 +31,7 @@ $SSH "rm -f /home/racecar/${NAME}.tar.gz" || true
 
 # Extract locally: remove old dir, then extract
 rm -rf "${DEST}/${NAME}"
-tar xzf "$TARNAME" -C "$DEST" \
+tar xzf "$TARNAME" --no-xattrs -C "$DEST" \
   || die "Local extraction failed. Check that '${DEST}' exists and is writable."
 
 echo "Downloaded ${NAME} to ${DEST}/${NAME}"

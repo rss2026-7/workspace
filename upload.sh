@@ -18,7 +18,7 @@ cleanup() { rm -f "$TARNAME"; }
 trap cleanup EXIT
 
 # Tar up locally from parent dir so archive contains the directory name
-tar czf "$TARNAME" --exclude='__pycache__' -C "$(dirname "$SRC")" "$NAME" \
+tar czf "$TARNAME" --no-xattrs --exclude='__pycache__' -C "$(dirname "$SRC")" "$NAME" \
   || die "Failed to create archive from '$SRC'. Check that you have read permissions."
 
 # Upload tarball to robot home dir
