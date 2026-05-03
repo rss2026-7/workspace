@@ -68,17 +68,9 @@ ping_with_timeout() {
 }
 
 ROBOT="racecar@192.168.1.56"
-ROBOT_BACKUP="racecar@192.168.8.206"
 
-# Fall back to ROBOT_BACKUP if primary is unreachable
-if ! ping_with_timeout 192.168.1.56 5; then
-  warn "Primary robot (192.168.1.56) unreachable, trying backup (192.168.8.206)..."
-  if ping_with_timeout 192.168.8.206 5; then
-    ROBOT="$ROBOT_BACKUP"
-  else
-    die "Neither primary (192.168.1.56) nor backup (192.168.8.206) robot is reachable. Are you on the robot's network?"
-  fi
-fi
+ping_with_timeout 192.168.1.56 5 \
+  || die "Robot (192.168.1.56) is not reachable. Are you on the robot's network?"
 
 PASS="racecar@mit"
 SSH="sshpass -p $PASS ssh -o StrictHostKeyChecking=no $ROBOT"
