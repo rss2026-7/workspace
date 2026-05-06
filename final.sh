@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Upload ../final_challenge2026 to ~/racecar_ws/src/ on the robot.
-# Excludes __pycache__, .venv, and media/. Keeps .git.
+# Excludes __pycache__, .venv, media/, testing_images/, and bulky proof/ artifacts.
 # Usage: ./final.sh
 
 set -e
@@ -33,13 +33,21 @@ cleanup() {
 }
 trap cleanup EXIT
 
-log "Creating tar archive (excluding __pycache__, .venv, media)..."
+log "Creating tar archive (excluding __pycache__, .venv, media, testing_images, bulky proof/)..."
 SRC_SIZE="$(du -sh "$SRC" 2>/dev/null | awk '{print $1}')"
 log "  source size on disk: ${SRC_SIZE:-unknown}"
 tar czf "$TARNAME" --no-xattrs \
   --exclude='__pycache__' \
   --exclude='.venv' \
   --exclude='media' \
+  --exclude='testing_images' \
+  --exclude='proof/rosbag2_*' \
+  --exclude='proof/output.mp4' \
+  --exclude='proof/sample_t*.png' \
+  --exclude='*.pt' \
+  --exclude='*.MOV' \
+  --exclude='*.mp4' \
+  --exclude='lane_tune.tar.gz' \
   -C "$(dirname "$SRC")" "$NAME" \
   || die "Failed to create archive from '$SRC'. Check that you have read permissions."
 TAR_SIZE="$(du -sh "$TARNAME" 2>/dev/null | awk '{print $1}')"
